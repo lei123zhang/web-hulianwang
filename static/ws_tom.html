@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>广播式WebSocket</title>
+    <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="js/sockjs.min.js"></script>
+    <script type="text/javascript" src="js/stomp.min.js"></script>
+    <!--<script th:src="@{/static/js/sockjs.min.js}"></script>
+    <script th:src="@{/static/js/stomp.js}"></script>
+    <script th:src="@{/static/js/jquery-3.1.1.js}"></script>-->
+</head>
+<body onload="disconnect()">
+<noscript><h2 style="color: #e80b0a;">Sorry，浏览器不支持WebSocket</h2></noscript>
+<div>
+    <div>
+        <button id="connect" onclick="connect();">连接</button>
+        <button id="disconnect" disabled="disabled" onclick="disconnect();">断开连接</button>
+    </div>
+
+    <div id="conversationDiv">
+        <label>输入消息内容</label><input type="text" id="content"/>
+        <button id="sendName" onclick="sendName();">发送</button>
+        <p id="response"></p>
+    </div>
+</div>
+<script type="text/javascript">
+    var stompClient = null;
+    function setConnected(connected) {
+        document.getElementById("connect").disabled = connected;
+        document.getElementById("disconnect").disabled = !connected;
+        document.getElementById("conversationDiv").style.visibility = connected ? 'visible' : 'hidden';
+//        $("#connect").disabled = connected;
+//        $("#disconnect").disabled = !connected;
+        $("#response").html();
+    }
+    function connect() {
+        var socket = new SockJS('http://114.55.94.18:7571/chat-webSocket');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+            setConnected(true);
+            console.log('Connected:' + frame);
+            stompClient.subscribe('/user/ewqdfdgdfg/22333345', function (response) {
+                showResponse(JSON.parse(response.body).nameFrom+"说:"+JSON.parse(response.body).content);
+            })
+        });
+    }
+    function disconnect() {
+        if (stompClient != null) {
+            stompClient.disconnect();
+        }
+        setConnected(false);
+        console.log('Disconnected');
+    }
+    function sendName() {
+        var content = $('#content').val();
+        console.log('content:' + content);
+        var jsonParam = {'uidTo':'fdhgfjhkjh',
+            'uidFrom':'ewqdfdgdfg','nameFrom':'tom',
+            'nameTo':'jack','content':content,'orderId':'22333345'};
+        stompClient.send("/app/message/chat", {},
+            JSON.stringify(jsonParam));
+        showResponse("我说："+jsonParam.content);
+    }
+    function showResponse(message) {
+        $("#response").append("<p>"+message+"</p>");
+    }
+</script>
+</body>
+</html>
